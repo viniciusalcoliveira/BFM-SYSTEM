@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - BFM Frotas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f4f8; /* Light background for a clean look */
+            color: #2c3e50; /* Darker text for readability */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased; /* Smoother font rendering */
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Custom animation for dropdown fade-in (downwards) */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-down {
+            animation: fadeInDown 0.3s ease-out forwards;
+            transform-origin: top;
+        }
+
+        /* Custom animation for submenu fade-in (sideways) */
+        @keyframes fadeInRight {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-fade-in-right {
+            animation: fadeInRight 0.3s ease-out forwards;
+            transform-origin: left;
+        }
+
+        /* Custom scrollbar styling for a consistent look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: rgb(20, 139, 36); /* Semi-transparent primary green */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(26, 77, 62, 0.1); /* Lighter track */
+        }
+
+        /* Base dropdown item styling */
+        .dropdown-item {
+            padding: 0.75rem 1.5rem;
+            color: #374151; /* gray-700 */
+            font-weight: 500;
+            white-space: nowrap;
+            display: block; /* Ensure it takes full width */
+            width: 100%;
+            text-align: left;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: #e0f2f7; /* lighter blue/greenish hue for hover */
+            color: #1e7e15; /* primary green for hover text */
+        }
+
+        /* Specific styling for nested submenu trigger buttons */
+        .submenu-trigger {
+            width: 100%;
+            text-align: left;
+            padding: 0.75rem 1.5rem;
+            color: #374151;
+            font-weight: 500;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: transparent; /* Reset button default bg */
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .submenu-trigger:hover {
+            background-color: #e0f2f7;
+            color: #0da326;
+        }
+
+        /* Styles for dropdown content (main menus) */
+        .dropdown-content {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl */
+        }
+
+        /* Styles for submenu content (nested menus) */
+        .submenu-content {
+            position: absolute;
+            top: 0;
+            left: 100%; /* Opens to the right */
+            min-width: 220px;
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            z-index: 10000; /* Ensure it's above other elements */
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #e2e8f0; /* Small border for visual separation */
+        }
+
+        /* Adjust caret rotation for main dropdowns */
+        .ph-caret-down {
+            transition: transform 0.2s ease-in-out;
+        }
+        .menu-link[aria-expanded="true"] .ph-caret-down {
+            transform: rotate(180deg); /* Rotates up when open */
+        }
+
+        /* Adjust caret rotation for submenus */
+        .ph-caret-right {
+            transition: transform 0.2s ease-in-out;
+        }
+        .submenu-trigger[aria-expanded="true"] .ph-caret-right {
+            transform: rotate(90deg); /* Rotates down when open (if opening right) */
+        }
+
+        /* Active menu styling */
+        .active-menu {
+            color: #facc15 !important; /* yellow-300 */
+            border-bottom: 4px solid #facc15 !important; /* yellow-300 */
+        }
+
+        /* Responsive adjustments for mobile */
+        @media (max-width: 767px) { /* Tailind's md breakpoint is 768px */
+            .md\:flex-row {
+                flex-direction: column;
+            }
+            .md\:mb-0 {
+                margin-bottom: 1rem; /* Adjust margin for mobile brand */
+            }
+            .nav {
+                width: 100%;
+                flex-direction: column;
+                align-items: flex-start;
+                padding-top: 1rem;
+            }
+            .menu-link, .dropdown > button {
+                width: 100%;
+                text-align: left;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+
+            /* Main dropdowns revert to full width and relative positioning for mobile */
+            .dropdown-content {
+                position: static !important; /* Override absolute for mobile */
+                width: 100%;
+                border-radius: 0;
+                box-shadow: none;
+                border-top: 1px solid #e2e8f0; /* Add a subtle divider */
+                padding-left: 1rem; /* Indent dropdown items */
+            }
+            /* Submenus also revert to full width and static positioning for mobile */
+            .submenu-content {
+                position: static !important; /* Override absolute for mobile */
+                width: 100%;
+                border-radius: 0;
+                box-shadow: none;
+                border-left: none; /* Remove left border */
+                border-top: 1px solid #e2e8f0; /* Add a subtle divider */
+                padding-left: 2rem; /* Further indent nested items */
+            }
+
+            .ph-caret-down, .ph-caret-right {
+                transform: rotate(0deg) !important; /* Reset rotation for mobile */
+            }
+            .menu-link[aria-expanded="true"] .ph-caret-down,
+            .submenu-trigger[aria-expanded="true"] .ph-caret-right {
+                transform: rotate(180deg) !important; /* Still rotate down for consistency in mobile dropdowns */
+            }
+        }
+
+        /* Form styling */
+        .form-container {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #334155; /* slate-700 */
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #cbd5e1; /* slate-300 */
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            color: #475569; /* slate-700 */
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group input[type="number"]:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #16a34a; /* green-600 */
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2); /* green-600 with opacity */
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .radio-group div {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .radio-group input[type="radio"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #94a3b8; /* slate-400 */
+            border-radius: 50%;
+            outline: none;
+            cursor: pointer;
+            position: relative;
+            transition: border-color 0.2s ease;
+        }
+
+        .radio-group input[type="radio"]:checked {
+            border-color: #16a34a; /* green-600 */
+        }
+
+        .radio-group input[type="radio"]:checked::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 0.75rem;
+            height: 0.75rem;
+            background-color: #16a34a; /* green-600 */
+            border-radius: 50%;
+        }
+
+        .radio-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #94a3b8; /* slate-400 */
+            border-radius: 0.375rem; /* rounded-md */
+            outline: none;
+            cursor: pointer;
+            position: relative;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .checkbox-group input[type="checkbox"]:checked {
+            background-color: #16a34a; /* green-600 */
+            border-color: #16a34a; /* green-600 */
+        }
+
+        .checkbox-group input[type="checkbox"]:checked::after {
+            content: '\2713'; /* Checkmark character */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 0.875rem; /* text-sm */
+            font-weight: bold;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+            font-weight: 500;
+            color: #334155;
+        }
+
+        .btn-submit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background-color: #16a34a; /* green-600 */
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1.125rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            margin-top: 2rem;
+        }
+
+        .btn-submit:hover {
+            background-color: #15803d; /* green-700 */
+            transform: translateY(-1px);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .checklist-items-container {
+            border: 1px solid #e2e8f0; /* slate-200 */
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            background-color: #f8fafc; /* slate-50 */
+            margin-bottom: 1.5rem;
+        }
+
+        .checklist-item {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Adjusted minmax for more fields */
+            gap: 1rem 1.5rem; /* Row gap, column gap */
+            align-items: flex-end;
+            border-bottom: 1px dashed #cbd5e1; /* slate-300 */
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .checklist-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .checklist-item .form-group {
+            margin-bottom: 0; /* Remove bottom margin for groups within checklist items */
+        }
+
+        .btn-add-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-bottom: 1.5rem;
+            border: none;
+        }
+
+        .btn-add-item:hover {
+            background-color: #2563eb; /* blue-600 */
+        }
+
+        .btn-remove-item {
+            background-color: #ef4444; /* red-500 */
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            border: none;
+            width: fit-content;
+            justify-self: end; /* Align to the end of its grid column */
+            white-space: nowrap;
+        }
+
+        .btn-remove-item:hover {
+            background-color: #dc2626; /* red-600 */
+        }
+
+        @media (max-width: 768px) {
+            .checklist-item {
+                grid-template-columns: 1fr;
+            }
+            .btn-remove-item {
+                width: 100%;
+                justify-self: stretch;
+            }
+        }
+
+        /* Plan List Section */
+        .plan-list-container {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            margin-top: 3rem;
+        }
+        .plan-list-item {
+            display: flex;
+            flex-direction: column;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .plan-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.5rem 1rem;
+            flex-grow: 1;
+        }
+        .plan-details span {
+            font-weight: 500;
+            color: #475569;
+        }
+        .plan-details strong {
+            color: #1e293b;
+        }
+        .plan-details .text-green-700 {
+            font-weight: 600;
+        }
+        
+        .btn-integrate-api {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: #22c55e; /* green-500 */
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-top: 1rem;
+            border: none;
+        }
+
+        .btn-integrate-api:hover {
+            background-color: #16a34a; /* green-600 */
+        }
+
+        /* Modal Specific Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10001; /* Above other elements */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 800px; /* Adjust max width for content */
+            max-height: 90vh; /* Limit height to prevent overflow */
+            overflow-y: auto; /* Enable scrolling for long forms */
+            position: relative;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal.open .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 1rem;
+        }
+
+        .modal-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #16a34a;
+        }
+
+        .modal-close-button {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #64748b; /* slate-500 */
+            transition: color 0.2s ease;
+        }
+
+        .modal-close-button:hover {
+            color: #334155; /* slate-700 */
+        }
+
+        .modal-checklist-container {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            background-color: #f8fafc;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-checklist-item {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem 1.5rem;
+            align-items: flex-end;
+            border-bottom: 1px dashed #cbd5e1;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-checklist-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .modal-checklist-item .form-group {
+            margin-bottom: 0;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1.5rem;
+        }
+
+        .btn-cancel {
+            background-color: #64748b; /* slate-500 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            border: none;
+        }
+
+        .btn-cancel:hover {
+            background-color: #475569; /* slate-700 */
+        }
+
+        .btn-save-modal {
+            background-color: #16a34a; /* green-600 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            border: none;
+        }
+
+        .btn-save-modal:hover {
+            background-color: #15803d; /* green-700 */
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+
+    <header class="bg-green-700 text-white p-4 flex flex-col md:flex-row items-center justify-between shadow-lg sticky top-0 z-50 rounded-b-xl">
+        <div class="font-extrabold text-3xl tracking-wider select-none mb-4 md:mb-0" tabindex="0">
+            <span class="text-white">BFM</span><span class="text-yellow-300"> FROTAS</span>
+        </div>
+
+        <nav class="flex flex-wrap gap-x-4 gap-y-2 items-center justify-center" role="navigation" aria-label="Menu principal">
+
+            <a href="dashboard.html" class="menu-link text-white font-semibold text-base py-2 px-2 relative whitespace-nowrap border-b-4 border-transparent hover:text-yellow-300 hover:border-yellow-300 transition">
+                Dashboard
+            </a>
+
+            <div class="relative dropdown" id="dropdown-configuracoes">
+                <button class="menu-link text-white font-semibold text-base py-2 px-2 hover:text-yellow-300 hover:border-yellow-300 border-b-4 border-transparent transition flex items-center gap-1" type="button" aria-haspopup="true" aria-expanded="false">
+                    Configurações <i class="ph ph-caret-down ml-1"></i>
+                </button>
+
+                <div id="menu-configuracoes" class="dropdown-content hidden absolute top-full left-0 bg-white rounded-xl shadow-xl min-w-[220px] z-[9999] flex-col">
+
+                    <div class="relative group" id="dropdown-veiculos-submenu">
+                        <button class="submenu-trigger" type="button" aria-haspopup="true" aria-expanded="false">
+                            Veículos
+                            <i class="ph ph-caret-right ml-2"></i>
+                        </button>
+
+                        <div id="menu-veiculos-submenu" class="submenu-content hidden">
+                            <a href="cadastroveiculos.html" class="dropdown-item">Cadastro de Veículos</a>
+                            <a href="cadastro_combustivel.html" class="dropdown-item">Cadastro de Combustível</a>
+                            <a href="cadastro_marcas.html" class="dropdown-item">Cadastro de Marcas</a>
+                            <a href="cadastro_modelo.html" class="dropdown-item">Cadastro de Modelo</a>
+                            <a href="anexosdocumentos.html" class="dropdown-item">Anexar Documento</a>
+                        </div>
+                    </div>
+                    <div class="relative group" id="dropdown-servicos-submenu">
+                        <button class="submenu-trigger" type="button" aria-haspopup="true" aria-expanded="false">
+                            Serviços
+                            <i class="ph ph-caret-right ml-2"></i>
+                        </button>
+
+                        <div id="menu-servicos-submenu" class="submenu-content hidden">
+                            <a href="cadastro-compartimentos.html" class="dropdown-item">Cadastro de Compartimentos</a>
+                            <a href="cadastro_acoes.html" class="dropdown-item">Cadastro de Ações</a>
+                        </div>
+                    </div>
+                    <a href="cadastro_tecnicos.html" class="dropdown-item">Cadastro de Técnicos</a>
+                    <a href="fornecedor.html" class="dropdown-item">Cadastro de Fornecedores</a>
+                    <a href="cadastro_periodicidade.html" class="dropdown-item">Cadastro de Periodicidade</a>
+                    <a href="oficinas.html" class="dropdown-item">Cadastro de Oficina</a>
+                    <a href="controlehodometrohorimetro.html" class="dropdown-item">Controle de Hodômetro/Horímetro</a>
+                </div>
+            </div>
+            <div class="relative dropdown" id="dropdown-plano">
+                <button class="menu-link text-white font-semibold text-base py-2 px-2 active-menu hover:text-yellow-300 hover:border-yellow-300 border-b-4 border-transparent transition flex items-center gap-1" type="button" aria-haspopup="true" aria-expanded="false">
+                    Plano de Manutenção <i class="ph ph-caret-down ml-1"></i>
+                </button>
+                <div id="menu-plano" class="dropdown-content hidden absolute top-full left-0 bg-white rounded-xl shadow-xl min-w-[220px] flex-col z-[9999]">
+                    <a href="pmp.html" class="dropdown-item">PMP - Preventiva</a>
+                    <a href="PL.html" class="dropdown-item">PL - Lubrificação</a>
+                </div>
+            </div>
+
+            <div class="relative dropdown" id="dropdown-os">
+                <button class="menu-link text-white font-semibold text-base py-2 px-2 hover:text-yellow-300 hover:border-yellow-300 border-b-4 border-transparent transition flex items-center gap-1" type="button" aria-haspopup="true" aria-expanded="false">
+                    Ordem de Serviço <i class="ph ph-caret-down ml-1"></i>
+                </button>
+                <div id="menu-os" class="dropdown-content hidden absolute top-full left-0 bg-white rounded-xl shadow-xl min-w-[220px] flex-col z-[9999]">
+                    <a href="agendamento.html" class="dropdown-item">Gerar Ordem de Serviço</a>
+                </div>
+            </div>
+
+            <div class="relative dropdown" id="dropdown-gerenciamento">
+                <button class="menu-link text-white font-semibold text-base py-2 px-2 hover:text-yellow-300 hover:border-yellow-300 border-b-4 border-transparent transition flex items-center gap-1" type="button" aria-haspopup="true" aria-expanded="false">
+                    Gerenciamento <i class="ph ph-caret-down ml-1"></i>
+                </button>
+                <div id="menu-gerenciamento" class="dropdown-content hidden absolute top-full left-0 bg-white rounded-xl shadow-xl min-w-[220px] flex-col z-[9999]">
+                    <a href="controle.html" class="dropdown-item">Controle</a>
+                    <a href="index.html" class="dropdown-item">Visão Geral de Frota</a>
+                </div>
+            </div>
+
+            <a href="seguranca.html" class="menu-link text-white font-semibold text-base py-2 px-2 hover:text-yellow-300 hover:border-yellow-300 border-b-4 border-transparent transition">
+                Segurança
+            </a>
+
+            <div class="relative dropdown" id="dropdown-alerts">
+                <button class="menu-link text-white font-semibold text-base py-2 px-2 hover:text-yellow-300 hover:border-yellow-300 border-b-4 border-transparent transition flex items-center gap-1" type="button" aria-haspopup="true" aria-expanded="false" id="alertBellButton">
+                    <i class="ph ph-bell text-xl"></i>
+                    <span id="alertCount" class="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 -mt-4 -mr-4 absolute top-1/2 left-1/2 transform translate-x-1/4 -translate-y-1/4" style="display: none;">0</span>
+                </button>
+                <div id="alertDropdown" class="dropdown-content hidden absolute top-full right-0 bg-white rounded-xl shadow-xl min-w-[300px] flex-col z-[9999] p-4">
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Notificações</h3>
+                    <div id="alertList" class="text-gray-700">
+                        <p class="text-sm text-gray-500">Nenhum alerta no momento.</p>
+                    </div>
+                </div>
+            </div>
+            <a href="#" onclick="logout()" class="menu-link text-white font-semibold text-base py-2 px-2 hover:text-yellow-300 hover:border-yellow-300 border-b-4 border-transparent transition">
+                Sair
+            </a>
+        </nav>
+    </header>
+
+    <script>
+        // Função para alternar dropdowns principais (abre para baixo)
+        function toggleDropdown(element) {
+            const dropdownContent = element.nextElementSibling;
+            const isExpanded = element.getAttribute('aria-expanded') === 'true';
+
+            // Fecha todos os dropdowns abertos, exceto o clicado
+            document.querySelectorAll('.dropdown-content:not(.hidden)').forEach(openDropdown => {
+                if (openDropdown !== dropdownContent) {
+                    openDropdown.classList.add('hidden');
+                    openDropdown.classList.remove('animate-fade-in-down');
+                    const parentButton = openDropdown.previousElementSibling;
+                    if (parentButton) {
+                        parentButton.setAttribute('aria-expanded', 'false');
+                    }
+                }
+            });
+
+            // Fecha todos os submenus abertos
+            document.querySelectorAll('.submenu-content:not(.hidden)').forEach(openSubmenu => {
+                openSubmenu.classList.add('hidden');
+                openSubmenu.classList.remove('animate-fade-in-right');
+                const parentButton = openSubmenu.previousElementSibling;
+                if (parentButton) {
+                    parentButton.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            // Alterna o dropdown clicado
+            if (isExpanded) {
+                dropdownContent.classList.add('hidden');
+                dropdownContent.classList.remove('animate-fade-in-down');
+                element.setAttribute('aria-expanded', 'false');
+            } else {
+                dropdownContent.classList.remove('hidden');
+                dropdownContent.classList.add('animate-fade-in-down');
+                element.setAttribute('aria-expanded', 'true');
+            }
+        }
+
+        // Função para alternar submenus (abre para o lado)
+        function toggleSubmenu(element) {
+            const submenuContent = element.nextElementSibling;
+            const isExpanded = element.getAttribute('aria-expanded') === 'true';
+
+            // Fecha todos os submenus abertos dentro do mesmo nível, exceto o clicado
+            element.closest('.dropdown-content, .submenu-content').querySelectorAll('.submenu-content:not(.hidden)').forEach(openSubmenu => {
+                if (openSubmenu !== submenuContent) {
+                    openSubmenu.classList.add('hidden');
+                    openSubmenu.classList.remove('animate-fade-in-right');
+                    const parentButton = openSubmenu.previousElementSibling;
+                    if (parentButton) {
+                        parentButton.setAttribute('aria-expanded', 'false');
+                    }
+                }
+            });
+
+            if (isExpanded) {
+                submenuContent.classList.add('hidden');
+                submenuContent.classList.remove('animate-fade-in-right');
+                element.setAttribute('aria-expanded', 'false');
+            } else {
+                submenuContent.classList.remove('hidden');
+                submenuContent.classList.add('animate-fade-in-right');
+                element.setAttribute('aria-expanded', 'true');
+            }
+        }
+
+        // Event Listeners para dropdowns principais (abrem com clique)
+        document.querySelectorAll('.dropdown > button.menu-link').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.stopPropagation(); // Previne que o clique se propague para o document e feche o menu
+                toggleDropdown(this);
+            });
+        });
+
+        // Event Listeners para submenus (abrem com clique em mobile, hover em desktop)
+        document.querySelectorAll('.submenu-trigger').forEach(button => {
+            // Click event for mobile and as fallback
+            button.addEventListener('click', function(event) {
+                event.stopPropagation(); // Previne que o clique se propague
+                toggleSubmenu(this);
+            });
+
+            // Mouseover/mouseout for desktop
+            const submenuContainer = button.parentElement; // The .relative group div
+            if (window.innerWidth >= 768) { // Apply hover only on desktop (md breakpoint)
+                submenuContainer.addEventListener('mouseover', function() {
+                    const submenuContent = this.querySelector('.submenu-content');
+                    if (submenuContent && submenuContent.classList.contains('hidden')) {
+                        toggleSubmenu(this.querySelector('.submenu-trigger'));
+                    }
+                });
+
+                submenuContainer.addEventListener('mouseout', function(event) {
+                    // Check if mouse is really leaving the entire submenu container (including its content)
+                    if (!this.contains(event.relatedTarget)) {
+                        const submenuContent = this.querySelector('.submenu-content');
+                        if (submenuContent && !submenuContent.classList.contains('hidden')) {
+                            toggleSubmenu(this.querySelector('.submenu-trigger'));
+                        }
+                    }
+                });
+            }
+        });
+
+
+        // Fecha dropdowns/submenus quando clicar fora
+        document.addEventListener('click', function(event) {
+            document.querySelectorAll('.dropdown-content:not(.hidden)').forEach(menu => {
+                menu.classList.add('hidden');
+                menu.classList.remove('animate-fade-in-down');
+                const parentButton = menu.previousElementSibling;
+                if (parentButton) {
+                    parentButton.setAttribute('aria-expanded', 'false');
+                }
+            });
+            document.querySelectorAll('.submenu-content:not(.hidden)').forEach(submenu => {
+                submenu.classList.add('hidden');
+                submenu.classList.remove('animate-fade-in-right');
+                const parentButton = submenu.previousElementSibling;
+                if (parentButton) {
+                    parentButton.setAttribute('aria-expanded', 'false');
+                }
+            });
+        });
+
+        // Previne que cliques dentro dos dropdowns/submenus fechem o menu
+        document.querySelectorAll('.dropdown-content, .submenu-content').forEach(content => {
+            content.addEventListener('click', function(event) {
+                event.stopPropagation();
+            });
+        });
+
+
+        // Função para ativar o item de menu correto na navegação
+        function activateMenuItem() {
+            const currentPath = window.location.pathname.split('/').pop();
+
+            document.querySelectorAll('.menu-link, .dropdown-item, .submenu-trigger').forEach(item => {
+                item.classList.remove('active-menu'); // Remove a classe 'active-menu' de todos
+
+                const itemHref = item.getAttribute('href');
+                let foundMatch = false;
+
+                // Check direct link (menu-link or dropdown-item)
+                if (itemHref && itemHref.endsWith(currentPath)) {
+                    item.classList.add('active-menu');
+                    foundMatch = true;
+                }
+
+                // If a submenu-trigger, check its contained items
+                if (item.classList.contains('submenu-trigger')) {
+                    const submenuContent = item.nextElementSibling;
+                    if (submenuContent) {
+                        const submenuItems = submenuContent.querySelectorAll('.dropdown-item');
+                        submenuItems.forEach(subItem => {
+                            if (subItem.getAttribute('href') && subItem.getAttribute('href').endsWith(currentPath)) {
+                                subItem.classList.add('active-menu');
+                                item.classList.add('active-menu'); // Activate the submenu trigger itself
+                                foundMatch = true;
+                            }
+                        });
+                    }
+                }
+
+                if (foundMatch) {
+                    let parent = item.closest('.dropdown-content, .submenu-content');
+                    while (parent) {
+                        const parentButton = parent.previousElementSibling;
+                        if (parentButton && (parentButton.classList.contains('menu-link') || parentButton.classList.contains('submenu-trigger'))) {
+                            parentButton.classList.add('active-menu'); // Ativa o botão pai do dropdown/submenu
+
+                            // Expande o menu/submenu pai
+                            parentButton.setAttribute('aria-expanded', 'true');
+                            parent.classList.remove('hidden'); // Garante que o menu/submenu pai esteja visível
+                            if (parent.classList.contains('dropdown-content')) {
+                                parent.classList.add('animate-fade-in-down');
+                            } else if (parent.classList.contains('submenu-content')) {
+                                parent.classList.add('animate-fade-in-right');
+                            }
+                        }
+                        // Continue subindo na hierarquia
+                        parent = parent.parentElement.closest('.dropdown-content, .submenu-content');
+                    }
+                }
+            });
+        }
+
+
+        // Chama a função quando a página é carregada
+        document.addEventListener('DOMContentLoaded', activateMenuItem);
+
+        // Adiciona o evento de clique para que, ao navegar, a classe 'active-menu' seja aplicada imediatamente
+        document.querySelectorAll('.menu-link, .dropdown-item, .submenu-trigger').forEach(item => {
+            item.addEventListener('click', function() {
+                // Clear all active classes
+                document.querySelectorAll('.menu-link, .dropdown-item, .submenu-trigger').forEach(i => i.classList.remove('active-menu'));
+
+                // Add active class to the clicked item
+                this.classList.add('active-menu');
+
+                // If it's a direct link or dropdown item, ensure its parents are also active
+                if (!this.classList.contains('submenu-trigger')) { // Only for actual links, not submenu buttons
+                    let parentDropdown = this.closest('.dropdown-content, .submenu-content');
+                    while (parentDropdown) {
+                        const parentButton = parentDropdown.previousElementSibling;
+                        if (parentButton && (parentButton.classList.contains('menu-link') || parentButton.classList.contains('submenu-trigger'))) {
+                            parentButton.classList.add('active-menu');
+                        }
+                        parentDropdown = parentDropdown.parentElement.closest('.dropdown-content, .submenu-content');
+                    }
+                }
+            });
+        });
+
+        //TERMINANDO O HEADER
+    </script>
+
+    <div class="flex flex-col md:flex-row flex-grow overflow-hidden">
+        <aside class="md:w-72 p-6 bg-white border-r border-gray-200 overflow-y-auto shadow-md rounded-br-2xl md:rounded-tr-none md:rounded-br-none md:rounded-bl-2xl">
+            <h2 class="text-2xl font-bold text-blue-900 mb-6 flex items-center">
+                <i class="ph ph-funnel text-blue-600 text-3xl mr-3"></i> Filtros
+            </h2>
+            <div class="space-y-6">
+                <div>
+                    <label for="periodo" class="block text-md font-semibold mb-2 text-gray-700">Período:</label>
+                    <select id="periodo" class="w-full p-3 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-lg">
+                        <option value="7d">Últimos 7 dias</option>
+                        <option value="30d">Últimos 30 dias</option>
+                        <option value="90d">Últimos 90 dias</option>
+                        <option value="180d">Últimos 180 dias</option>
+                        <option value="365d">Últimos 365 dias</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="status" class="block text-md font-semibold mb-2 text-gray-700">Status:</label>
+                    <select id="status" class="w-full p-3 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-lg">
+                        <option value="all">Todos</option>
+                        <option value="active">Ativo</option>
+                        <option value="inactive">Inativo</option>
+                        <option value="maintenance">Em Manutenção</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="categoria" class="block text-md font-semibold mb-2 text-gray-700">Categoria:</label>
+                    <select id="categoria" class="w-full p-3 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-lg">
+                        <option value="all">Todas</option>
+                        <option value="caminhoes">Caminhões</option>
+                        <option value="maquinas">Máquinas</option>
+                        <option value="onibus">Ônibus</option>
+                        <option value="tratores">Tratores</option>
+                        <option value="vans">Vans</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-md font-semibold mb-2 text-gray-700">Data Personalizada:</label>
+                    <div class="mt-1 flex flex-col gap-3">
+                        <input type="date" id="dataInicio" class="w-full p-3 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-lg">
+                        <input type="date" id="dataFim" class="w-full p-3 rounded-lg border border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-lg">
+                    </div>
+                </div>
+                <div class="flex justify-center mt-6">
+                    <button onclick="aplicarFiltros()" class="w-full bg-blue-600 text-white font-bold text-lg py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-300 shadow-md flex items-center justify-center">
+                        <i class="ph ph-magnifying-glass text-xl mr-2"></i> Aplicar Filtros
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-6 md:p-8 space-y-8 overflow-y-auto">
+            <h1 class="font-extrabold text-5xl mb-4 text-center text-green-800 tracking-wide select-none">Dashboard BFM Frotas</h1>
+            <p class="text-lg text-gray-700 mb-8 text-center">Visão geral e análises do seu gerenciamento de frotas.</p>
+
+            <p id="ultimaAtualizacao" class="text-md text-right text-gray-600 flex items-center justify-end">
+                <i class="ph ph-clock text-green-600 text-xl mr-2"></i> Última atualização: <span class="font-semibold ml-1">Carregando...</span>
+            </p>
+
+            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8" aria-label="Indicadores Chave de Performance">
+                <div class="p-6 rounded-2xl bg-gradient-to-br from-green-600 to-green-800 text-white shadow-xl flex flex-col justify-between transform hover:scale-105 transition-transform duration-300 ease-in-out">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-lg font-medium">Custo Total</p>
+                        <i class="ph ph-currency-dollar text-4xl opacity-75"></i>
+                    </div>
+                    <h2 id="kpiFaturamento" class="text-4xl font-extrabold">R$ 0</h2>
+                    <p class="text-sm opacity-90 mt-2">Gasto bruto no período</p>
+                </div>
+
+                <div class="p-6 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-xl flex flex-col justify-between transform hover:scale-105 transition-transform duration-300 ease-in-out">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-lg font-medium">Ordens de Serviço (OS)</p>
+                        <i class="ph ph-clipboard-text text-4xl opacity-75"></i>
+                    </div>
+                    <h2 id="kpiPedidos" class="text-4xl font-extrabold">0</h2>
+                    <p class="text-sm opacity-90 mt-2">Total de OS geradas</p>
+                </div>
+
+                <div class="p-6 rounded-2xl bg-gradient-to-br from-yellow-500 to-yellow-700 text-green-900 shadow-xl flex flex-col justify-between transform hover:scale-105 transition-transform duration-300 ease-in-out">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-lg font-medium">Veículos Ativos</p>
+                        <i class="ph ph-truck text-green-900 text-4xl opacity-75"></i>
+                    </div>
+                    <h2 id="kpiVeiculosAtivos" class="text-4xl font-extrabold">0</h2>
+                    <p class="text-sm opacity-90 mt-2">Caminhões e máquinas operacionais</p>
+                </div>
+
+                <div class="p-6 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 text-white shadow-xl flex flex-col justify-between transform hover:scale-105 transition-transform duration-300 ease-in-out">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-lg font-medium">Manutenções Pendentes</p>
+                        <i class="ph ph-warning-octagon text-4xl opacity-75"></i>
+                    </div>
+                    <h2 id="kpiManutencoesPendentes" class="text-4xl font-extrabold">0</h2>
+                    <p class="text-sm opacity-90 mt-2">Manutenções agendadas ou atrasadas</p>
+                </div>
+            </section>
+
+            <div class="flex flex-col sm:flex-row justify-end gap-4 mb-8">
+                <button onclick="showFleetStatusModal()" class="bg-yellow-500 text-green-900 font-bold text-lg py-3 px-8 rounded-lg hover:bg-yellow-600 transition-colors duration-300 shadow-md flex items-center justify-center">
+                    <i class="ph ph-truck-trailer text-xl mr-2"></i> Visualizar Frota
+                </button>
+                <button onclick="atualizarDashboard()" class="bg-green-800 text-white font-bold text-lg py-3 px-8 rounded-lg hover:bg-green-700 transition-colors duration-300 shadow-md flex items-center justify-center">
+                    <i class="ph ph-arrow-counter-clockwise text-xl mr-2"></i> Atualizar Dados
+                </button>
+            </div>
+
+            <section class="grid grid-cols-1 lg:grid-cols-2 gap-8" aria-label="Gráficos de Desempenho">
+                <div class="bg-white p-6 rounded-3xl shadow-lg border border-gray-100 flex flex-col items-center justify-center">
+                    <h3 class="text-2xl font-bold text-green-900 mb-6 flex items-center">
+                        <i class="ph ph-chart-line text-green-600 text-3xl mr-3"></i> Faturamento Mensal
+                    </h3>
+                    <div class="chart-container"> <canvas id="graficoFaturamento"></canvas> </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-3xl shadow-lg border border-gray-100 flex flex-col items-center justify-center">
+                    <h3 class="text-2xl font-bold text-green-900 mb-6 flex items-center">
+                        <i class="ph ph-chart-pie text-green-600 text-3xl mr-3"></i> Frotas por Tipo
+                    </h3>
+                    <div class="chart-container"> <canvas id="graficoCategorias"></canvas> </div>
+                </div>
+
+                <div class="lg:col-span-2 bg-white p-6 rounded-3xl shadow-lg border border-gray-100 flex flex-col items-center justify-center">
+                    <div class="flex flex-col sm:flex-row justify-between items-center w-full mb-6">
+                        <h3 class="text-2xl font-bold text-green-900 flex items-center mb-4 sm:mb-0">
+                            <i class="ph ph-chart-bar text-green-600 text-3xl mr-3"></i> Análise de Custos
+                        </h3>
+                        <select id="personalizado" class="p-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                            <option value="gastos">Gastos</option>
+                            <option value="investimentos">Investimentos</option>
+                        </select>
+                    </div>
+                    <div class="chart-container"> <canvas id="graficoPersonalizado"></canvas> </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="fleetStatusModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-green-900 flex items-center">
+                    <i class="ph ph-truck text-green-600 text-4xl mr-3"></i> Status Detalhado da Frota
+                </h2>
+                <button onclick="hideFleetStatusModal()" class="text-gray-500 hover:text-gray-800 transition-colors text-3xl">
+                    <i class="ph ph-x-circle"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div class="bg-green-50 p-4 rounded-xl shadow-sm flex items-center">
+                    <div class="status-icon-summary green">
+                        <i class="ph ph-truck"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg text-green-700">Disponíveis</h4>
+                        <p class="text-2xl font-bold text-green-900" id="fleetAvailable">0</p>
+                    </div>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-xl shadow-sm flex items-center">
+                    <div class="status-icon-summary yellow">
+                        <i class="ph ph-wrench"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg text-yellow-700">Em Manutenção</h4>
+                        <p class="text-2xl font-bold text-yellow-900" id="fleetMaintenance">0</p>
+                    </div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-xl shadow-sm flex items-center">
+                    <div class="status-icon-summary red">
+                        <i class="ph ph-truck-slash"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg text-red-700">Indisponíveis</h4>
+                        <p class="text-2xl font-bold text-red-900" id="fleetUnavailable">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="individualTrucksContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-96 overflow-y-auto pr-2">
+                </div>
+        </div>
+    </div>
+<script>
+    // --- Local Storage Data Management ---
+    const LOCAL_STORAGE_KEY = 'bfm_fleet_data';
+
+    // Default mock data if nothing is in localStorage
+    const defaultBFMFleetData = {
+        vehicles: [
+            { id: 1, nome: 'Caminhão 101', marca: 'Volvo', modelo: 'FH 540', tipoVeiculo: 'Caminhao', combustivel: 'Diesel', placa: 'ABC-1234', ano: 2020, km: 150000, hr: null, status: 'Ativo', necessitaPMP: true, necessitaPL: true, observacoes: 'Primeiro veículo de teste.', revenue: 10000 },
+            { id: 2, nome: 'Máquina XL-200', marca: 'Caterpillar', modelo: '320D', tipoVeiculo: 'Maquina', combustivel: 'Diesel', placa: null, ano: 2018, km: null, hr: 8500, status: 'Em Manutenção', necessitaPMP: true, necessitaPL: true, observacoes: 'Máquina aguardando peças.', revenue: 8000 },
+            { id: 3, nome: 'Van Frota 05', marca: 'Renault', modelo: 'Master', tipoVeiculo: 'Van', combustivel: 'Diesel', placa: 'XYZ-5678', ano: 2022, km: 45000, hr: null, status: 'Ativo', necessitaPMP: true, necessitaPL: false, observacoes: 'Para entregas rápidas.', revenue: 5000 },
+            { id: 4, nome: 'Carro Leve 01', marca: 'Fiat', modelo: 'Strada', tipoVeiculo: 'Carro', combustivel: 'Flex', placa: 'PQR-9012', ano: 2023, km: 12000, hr: null, status: 'Ativo', necessitaPMP: false, necessitaPL: false, observacoes: 'Veículo de apoio.', revenue: 3000 },
+            { id: 5, nome: 'Scania R450', marca: 'Scania', modelo: 'R450', tipoVeiculo: 'Caminhao', combustivel: 'Diesel', placa: 'DEF-5678', ano: 2019, km: 200000, hr: null, status: 'Indisponível', necessitaPMP: true, necessitaPL: true, observacoes: 'Problema no motor.', revenue: 0 }
+        ],
+        kpis: {
+            faturamento: 1500000.00,
+            pedidos: 250,
+            manutencoesPendentes: 10
+        },
+        faturamentoMensal: {
+            labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+            data: [100000, 120000, 90000, 150000, 110000, 130000, 160000, 105000, 140000, 115000, 125000, 170000]
+        },
+        analiseCustos: {
+            labels: ['Pneus', 'Combustível', 'Mão de Obra', 'Peças', 'Manutenção Preventiva', 'Seguros'],
+            data: [25000, 50000, 15000, 30000, 18000, 22000]
+        }
+    };
+
+    function getBFMFleetData() {
+        const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (storedData) {
+            return JSON.parse(storedData);
+        } else {
+            // Initialize with default data and save to localStorage
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(defaultBFMFleetData));
+            return defaultBFMFleetData;
+        }
+    }
+
+    function saveBFMFleetData(data) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+    }
+
+    // --- Chart Instances ---
+    let graficoFaturamentoChart;
+    let graficoCategoriasChart;
+    let graficoPersonalizadoChart;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Check login status
+        if (localStorage.getItem('logado') !== 'true') {
+            window.location.href = 'login.html';
+            return; // Stop execution if not logged in
+        }
+
+        // Initialize data from localStorage or defaults
+        const currentData = getBFMFleetData();
+
+        // Initialize the date on the "Last Update" filter
+        const now = new Date();
+        document.getElementById('ultimaAtualizacao').querySelector('span').textContent =
+            now.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+        // Add event listeners for dropdowns in the header
+        document.querySelectorAll('.dropdown > button').forEach(button => {
+            button.addEventListener('click', (event) => toggleDropdown(button.nextElementSibling.id, event));
+        });
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (event) => {
+            document.querySelectorAll('.dropdown-content').forEach(content => {
+                const button = content.previousElementSibling;
+                if (content.classList.contains('active') && !button.contains(event.target) && !content.contains(event.target)) {
+                    hideDropdown(content.id);
+                }
+            });
+        });
+
+        // Add event listener for the cost analysis filter
+        document.getElementById('personalizado').addEventListener('change', atualizarAnaliseCustos);
+
+        // Load initial dashboard data
+        atualizarDashboard();
+    });
+
+    // --- Dropdown Menu Functions ---
+    function toggleMobileMenu() {
+        const nav = document.querySelector('header nav');
+        nav.classList.toggle('active');
+        const menuIcon = document.querySelector('.menu-icon i');
+        if (nav.classList.contains('active')) {
+            menuIcon.classList.remove('ph-list');
+            menuIcon.classList.add('ph-x');
+            menuIcon.setAttribute('aria-label', 'Fechar Menu');
+        } else {
+            menuIcon.classList.remove('ph-x');
+            menuIcon.classList.add('ph-list');
+            menuIcon.setAttribute('aria-label', 'Abrir Menu');
+        }
+    }
+
+    function toggleDropdown(id, event) {
+        event.stopPropagation(); // Prevents the click from propagating and closing immediately
+        const dropdownContent = document.getElementById(id);
+        const caretIcon = event.currentTarget.querySelector('.caret-icon'); // Get the caret icon within the clicked button
+        
+        // Close all other open dropdowns
+        document.querySelectorAll('.dropdown-content.active').forEach(openDropdown => {
+            if (openDropdown.id !== id) {
+                hideDropdown(openDropdown.id);
+            }
+        });
+
+        if (dropdownContent.classList.contains('active')) {
+            hideDropdown(id);
+            if (caretIcon) {
+                caretIcon.classList.remove('rotate'); // Rotate back
+            }
+        } else {
+            showDropdown(id);
+            if (caretIcon) {
+                caretIcon.classList.add('rotate'); // Rotate
+            }
+        }
+    }
+
+    function showDropdown(id) {
+        const dropdownContent = document.getElementById(id);
+        dropdownContent.classList.remove('hidden');
+        // Force reflow to restart animation
+        void dropdownContent.offsetWidth;
+        dropdownContent.classList.add('active');
+        dropdownContent.classList.add('animate-fade-in');
+        if (dropdownContent.previousElementSibling) {
+            dropdownContent.previousElementSibling.setAttribute('aria-expanded', 'true');
+        }
+    }
+
+    function hideDropdown(id) {
+        const dropdownContent = document.getElementById(id);
+        dropdownContent.classList.remove('animate-fade-in');
+        dropdownContent.classList.remove('active');
+        if (dropdownContent.previousElementSibling) {
+            dropdownContent.previousElementSibling.setAttribute('aria-expanded', 'false');
+            const caretIcon = dropdownContent.previousElementSibling.querySelector('.caret-icon');
+            if (caretIcon) {
+                caretIcon.classList.remove('rotate'); // Rotate back when hidden
+            }
+        }
+        // Add a small delay before adding 'hidden' if the animation is long
+        setTimeout(() => {
+            if (!dropdownContent.classList.contains('active')) { // Only hide if not reopened
+                dropdownContent.classList.add('hidden');
+            }
+        }, 300); // Should be equal to or greater than the CSS animation duration
+    }
+
+    // --- Dashboard Data Functions ---
+    async function atualizarDashboard() {
+        console.log('Atualizando dashboard...');
+        document.getElementById('ultimaAtualizacao').querySelector('span').textContent = 'Carregando...';
+
+        await Promise.all([
+            atualizarKPIs(),
+            atualizarGraficoFaturamento(),
+            atualizarGraficoCategorias(),
+            atualizarAnaliseCustos()
+        ]);
+
+        const now = new Date();
+        document.getElementById('ultimaAtualizacao').querySelector('span').textContent =
+            now.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+    }
+
+    function aplicarFiltros() {
+        // For now, filters do not affect the mock data, but the function is kept
+        // for future implementation with real data.
+        console.log('Aplicando filtros (funcionalidade mockada para protótipo).');
+        const periodo = document.getElementById('periodo').value;
+        const status = document.getElementById('status').value;
+        const categoria = document.getElementById('categoria').value;
+        const dataInicio = document.getElementById('dataInicio').value;
+        const dataFim = document.getElementById('dataFim').value;
+
+        console.log({ periodo, status, categoria, dataInicio, dataFim });
+
+        // Update the dashboard with mock data, filters do not change test data
+        atualizarDashboard();
+        alert('Filtros aplicados! (Dados de exemplo não mudam com filtros)');
+    }
+
+    function atualizarKPIs() {
+        const data = getBFMFleetData();
+        const vehicles = data.vehicles;
+
+        const ativos = vehicles.filter(v => v.status === 'Ativo').length;
+        const emManutencao = vehicles.filter(v => v.status === 'Em Manutenção').length;
+        const indisponiveis = vehicles.filter(v => v.status === 'Indisponível').length; // Assuming 'Indisponível' is another status
+
+        // Sum revenue from all vehicles
+        const totalRevenue = vehicles.reduce((sum, v) => sum + (v.revenue || 0), 0);
+
+        document.getElementById('kpiFaturamento').textContent = `R$ ${totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        document.getElementById('kpiPedidos').textContent = data.kpis.pedidos.toLocaleString('pt-BR');
+        document.getElementById('kpiVeiculosAtivos').textContent = ativos.toLocaleString('pt-BR');
+        document.getElementById('kpiManutencoesPendentes').textContent = data.kpis.manutencoesPendentes.toLocaleString('pt-BR');
+    }
+
+    function atualizarGraficoFaturamento() {
+        const data = getBFMFleetData().faturamentoMensal;
+
+        const ctx = document.getElementById('graficoFaturamento').getContext('2d');
+        if (graficoFaturamentoChart) {
+            graficoFaturamentoChart.destroy();
+        }
+        graficoFaturamentoChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Faturamento Mensal (R$)',
+                    data: data.data,
+                    backgroundColor: 'rgba(0, 151, 57, 0.2)', // Brazilian Green with opacity
+                    borderColor: 'rgba(0, 151, 57, 1)', // Brazilian Green
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'R$ ' + value.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function atualizarGraficoCategorias() {
+        const vehicles = getBFMFleetData().vehicles;
+        const categoriaCounts = {};
+        vehicles.forEach(v => {
+            categoriaCounts[v.tipoVeiculo] = (categoriaCounts[v.tipoVeiculo] || 0) + 1;
+        });
+
+        const labels = Object.keys(categoriaCounts);
+        const data = Object.values(categoriaCounts);
+
+        const ctx = document.getElementById('graficoCategorias').getContext('2d');
+        if (graficoCategoriasChart) {
+            graficoCategoriasChart.destroy();
+        }
+        graficoCategoriasChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: [
+                        'rgba(0, 151, 57, 0.8)', // Brazilian Green
+                        'rgba(255, 205, 0, 0.8)', // Brazilian Yellow
+                        'rgba(0, 39, 118, 0.8)',  // Brazilian Blue
+                        'rgba(239, 68, 68, 0.8)',  // Red (for contrast)
+                        'rgba(147, 51, 234, 0.8)', // Violet (for contrast)
+                        'rgba(99, 102, 241, 0.8)'  // Indigo (for contrast)
+                    ],
+                    borderColor: '#fff',
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 20,
+                            padding: 15,
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                return `${label}: ${value} veículos`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function atualizarAnaliseCustos() {
+        const data = getBFMFleetData().analiseCustos;
+
+        const ctx = document.getElementById('graficoPersonalizado').getContext('2d');
+        if (graficoPersonalizadoChart) {
+            graficoPersonalizadoChart.destroy();
+        }
+        graficoPersonalizadoChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Valores (R$)',
+                    data: data.data,
+                    backgroundColor: 'rgba(255, 205, 0, 0.8)', // Brazilian Yellow
+                    borderColor: 'rgba(255, 205, 0, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'R$ ' + value.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // --- Modal de Status da Frota ---
+    const fleetStatusModal = document.getElementById('fleetStatusModal');
+    const individualTrucksContainer = document.getElementById('individualTrucksContainer');
+
+    function showFleetStatusModal() {
+        updateFleetStatus();
+        fleetStatusModal.classList.add('show');
+    }
+
+    function hideFleetStatusModal() {
+        fleetStatusModal.classList.remove('show');
+    }
+
+    function updateFleetStatus() {
+        const vehicles = getBFMFleetData().vehicles;
+
+        let available = 0;
+        let maintenance = 0;
+        let unavailable = 0;
+
+        individualTrucksContainer.innerHTML = ''; // Clear previous content
+
+        vehicles.forEach(vehicle => {
+            let statusClass = '';
+            let statusText = '';
+            let iconClass = '';
+
+            // Map backend status to CSS classes and icons
+            if (vehicle.status === 'Ativo') {
+                available++;
+                statusClass = 'available';
+                statusText = 'Disponível';
+                iconClass = 'ph ph-check-circle';
+            } else if (vehicle.status === 'Em Manutenção') {
+                maintenance++;
+                statusClass = 'maintenance';
+                statusText = 'Em Manutenção';
+                iconClass = 'ph ph-wrench';
+            } else if (vehicle.status === 'Indisponível') {
+                unavailable++;
+                statusClass = 'unavailable';
+                statusText = 'Indisponível';
+                iconClass = 'ph ph-x-circle';
+            } else {
+                // Fallback for unknown status
+                unavailable++;
+                statusClass = 'unavailable';
+                statusText = `Status Desconhecido: ${vehicle.status}`;
+                iconClass = 'ph ph-question';
+            }
+
+            const truckCard = `
+                <div class="truck-card ${statusClass}">
+                    <div class="icon"><i class="${iconClass}"></i></div>
+                    <div>
+                        <h5 class="text-lg font-semibold">${vehicle.nome || 'N/A'}</h5>
+                        <p class="text-sm text-gray-600">Placa: ${vehicle.placa || 'N/A'}</p>
+                        <p class="text-sm text-gray-600">Tipo: ${vehicle.tipoVeiculo || 'N/A'}</p>
+                        <p class="text-sm font-medium">Status: ${statusText}</p>
+                    </div>
+                </div>
+            `;
+            individualTrucksContainer.innerHTML += truckCard;
+        });
+
+        document.getElementById('fleetAvailable').textContent = available;
+        document.getElementById('fleetMaintenance').textContent = maintenance;
+        document.getElementById('fleetUnavailable').textContent = unavailable;
+    }
+
+    // Logout function (clears login status)
+    function logout() {
+        localStorage.removeItem('logado'); // Remove login status
+        window.location.href = 'login.html'; // Redirect to login page
+    }
+</script>
+</body>
+</html>
